@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Applications · AI Job Hunter{% endblock %}
+{% block content %}
+<div class="card row">
+  <a href="/applications">All</a>
+  {% for s in statuses %}<a href="/applications?status={{ s }}" {% if current == s %}style="font-weight:700"{% endif %}>{{ s|capitalize }} ({{ counts.get(s, 0) }})</a>{% endfor %}
+</div>
+<div class="card table-wrap">
+  <table>
+    <thead><tr><th>Position</th><th>Status · follow-up · notes</th><th>Applied</th></tr></thead>
+    <tbody>
+    {% for a in apps %}
+      <tr>
+        <td>{% if a.job_id %}<a href="/jobs/{{ a.job_id }}">{{ a.position }}</a>{% else %}{{ a.position }}{% endif %}<br>
+            <span class="muted small">{{ a.company or "" }}</span>
+            {% if a.job_url and a.job_url.startswith("http") %}<br><a class="small" href="{{ a.job_url }}" target="_blank" rel="noopener noreferrer nofollow">posting ↗</a>{% endif %}</td>
+        <td>
+          <form method="post" action="/applications/{{ a.id }}">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <div class="row">
+              <select name="status">{% for s in statuses %}<option value="{{ s }}" {% if a.status == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}</select>
+              <input type="date" name="follow_up_at" value="{{ a.follow_up_at.strftime('%Y-%m-%d') if a.follow_up_at else '' }}" title="Follow-up date">
+              <button type="submit">Save</button>
+            </div>
+            <textarea name="notes" rows="2" placeholder="Notes" style="margin-top:6px">{{ a.notes or "" }}</textarea>
+          </form>
+        </td>
+        <td class="small">{{ a.applied_at.strftime("%d %b %Y") if a.applied_at else "–" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3" class="muted">No applications yet. Use "Track" on a job, or the Telegram buttons.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="get" action="/">
+  <div class="grid">
+    <input name="q" placeholder="Search title, company, text" value="{{ params.q or '' }}">
+    <input name="skills" placeholder="Skills (comma separated)" value="{{ params.skills or '' }}">
+    <input name="country" placeholder="Country (e.g. Bangladesh)" value="{{ params.country or '' }}">
+    <select name="remote_type">
+      <option value="">Any work mode</option>
+      {% for rt in ["remote", "hybrid", "onsite", "unknown"] %}
+        <option value="{{ rt }}" {% if params.remote_type == rt %}selected{% endif %}>{{ rt|capitalize }}</option>
+      {% endfor %}
+    </select>
+    <select name="min_score">
+      <option value="">Any score</option>
+      {% for s in [90, 80, 70, 50] %}
+        <option value="{{ s }}" {% if params.min_score == s|string %}selected{% endif %}>Score ≥ {{ s }}</option>
+      {% endfor %}
+    </select>
+    <select name="source">
+      <option value="">All sources</option>
+      {% for s in sources %}<option value="{{ s.key }}" {% if params.source == s.key %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <select name="sort">
+      <option value="score" {% if params.sort == "score" %}selected{% endif %}>Sort: best match</option>
+      <option value="posted_at" {% if params.sort == "posted_at" %}selected{% endif %}>Sort: newest posted</option>
+      <option value="collected_at" {% if params.sort == "collected_at" %}selected{% endif %}>Sort: recently collected</option>
+    </select>
+    <button type="submit">Filter</button>
+  </div>
+</form>
+
+{% if not has_profile %}<div class="flash">No candidate profile yet — <a href="/profile">create one</a> to get match scores.</div>{% endif %}
+
+<div class="card">
+  <div class="row muted small" style="margin-bottom:6px">{{ result.total }} jobs · page {{ result.page }} of {{ result.pages }}</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Score</th><th>Job</th><th>Location</th><th>Source</th><th>Posted</th></tr></thead>
+    <tbody>
+    {% for job, match in result.items %}
+      <tr>
+        <td>{% if match %}<span class="score s-{{ match.category }}" title="{{ category_labels[match.category] }}">{{ match.match_score }}</span>{% else %}<span class="muted">–</span>{% endif %}</td>
+        <td><a href="/jobs/{{ job.id }}"><strong>{{ job.title }}</strong></a><br><span class="muted small">{{ job.company or "" }}{% if job.salary_text %} · {{ job.salary_text }}{% endif %}</span></td>
+        <td class="small">{{ job.location or "–" }}<br><span class="muted">{{ job.remote_type }}</span></td>
+        <td class="small">{{ job.source.name }}</td>
+        <td class="small">{{ (job.posted_at or job.collected_at).strftime("%d %b %Y") }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">No jobs match these filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="row" style="margin-top:12px">
+    {% if result.page > 1 %}<a href="/?{{ query }}&page={{ result.page - 1 }}">◀ Previous</a>{% endif %}
+    {% if result.page < result.pages %}<a href="/?{{ query }}&page={{ result.page + 1 }}">Next ▶</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

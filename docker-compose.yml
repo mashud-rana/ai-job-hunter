@@ -1,0 +1,33 @@
+name: ai-job-hunter
+
+# No database: the app keeps its data as JSON files in the `appdata` volume (or a GitHub Gist).
+
+services:
+  app:
+    build: .
+    image: ai-job-hunter:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+    ports:
+      - "127.0.0.1:8000:8000"   # put Nginx/Caddy in front for TLS; don't expose directly
+    volumes:
+      - appdata:/app/storage    # storage/data/*.json + uploads
+    stop_grace_period: 45s      # lets the final JSON flush finish
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  # Optional local LLM: `docker compose --profile ollama up -d`, then
+  # `docker compose exec ollama ollama pull llama3.1` and set AI_PROVIDER=ollama.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  appdata:
+  ollama:

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Profile · AI Job Hunter{% endblock %}
+{% block content %}
+{% if profile and profile.pending_profile %}
+{% set p = profile.pending_profile %}
+<div class="card" style="border-color:var(--accent)">
+  <h3 style="margin-top:0">Review data extracted from your CV <span class="muted small">({{ p.method }})</span></h3>
+  <p class="small muted">Your current profile is unchanged until you confirm. Confirming merges these skills with your existing ones.</p>
+  <p><strong>{{ p.name or "—" }}</strong> · {{ p.headline or "" }} · {{ p.years_experience if p.years_experience is not none else "?" }} years</p>
+  <p>Titles: {{ p.target_titles|join(", ") or "—" }}</p>
+  <div>{% for s in p.skills %}<span class="tag">{{ s.name }}</span>{% endfor %}</div>
+  <form method="post" action="/profile/pending" class="row" style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button type="submit" name="action" value="confirm">Apply to my profile</button>
+    <button type="submit" name="action" value="discard" class="secondary">Discard</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0">Upload CV (PDF, max 5 MB)</h3>
+  <form method="post" action="/profile/cv" enctype="multipart/form-data" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="file" name="file" accept="application/pdf,.pdf" required>
+    <button type="submit">Upload &amp; extract</button>
+  </form>
+  {% if profile and profile.cv_filename %}<p class="muted small">Last CV: {{ profile.cv_filename }}</p>{% endif %}
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Candidate profile {% if profile %}<span class="muted small">{{ "✔ verified" if profile.is_verified else "unverified" }} · version {{ profile.version }}</span>{% endif %}</h3>
+  <form method="post" action="/profile">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="grid">
+      <label>Name<br><input name="name" required value="{{ profile.name if profile else '' }}" style="width:100%"></label>
+      <label>Headline<br><input name="headline" value="{{ profile.headline or '' if profile else '' }}" style="width:100%"></label>
+      <label>Years of experience<br><input name="years_experience" type="number" step="0.5" min="0" max="60" value="{{ profile.years_experience if profile else 0 }}"></label>
+    </div>
+    <p><label>Target titles (one per line)<br><textarea name="target_titles" rows="4">{{ profile.target_titles|join("\n") if profile else "" }}</textarea></label></p>
+    <p><label>Preferred locations (one per line)<br><textarea name="preferred_locations" rows="3">{{ profile.preferred_locations|join("\n") if profile else "" }}</textarea></label></p>
+    <p><label>Employment types (one per line)<br><textarea name="job_types" rows="2">{{ profile.job_types|join("\n") if profile else "" }}</textarea></label></p>
+    <p><label>Skills (comma or one per line)<br><textarea name="skills" rows="5">{{ profile.skills|map(attribute="name")|join(", ") if profile else "" }}</textarea></label></p>
+    <p><label>Summary<br><textarea name="summary" rows="4">{{ profile.summary or "" if profile else "" }}</textarea></label></p>
+    <button type="submit">Save profile</button>
+    <span class="muted small">Saving marks the profile verified; jobs are re-scored on the next run.</span>
+  </form>
+</div>
+{% endblock %}

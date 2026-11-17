@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sources · AI Job Hunter{% endblock %}
+{% block content %}
+<div class="card table-wrap">
+  <h3 style="margin-top:0">Job sources</h3>
+  <table>
+    <thead><tr><th>Source</th><th>Status</th><th>Last success</th></tr></thead>
+    <tbody>
+    {% for s in sources %}
+      <tr>
+        <td><strong>{{ s.name }}</strong><br><span class="muted small">{{ s.key }}</span></td>
+        <td>{% if not s.available %}<span style="color:var(--warn)">Unavailable</span><br><span class="small muted">{{ s.unavailable_reason }}</span>
+            {% elif not s.enabled %}Disabled{% else %}<span style="color:var(--good)">Active</span>{% endif %}</td>
+        <td class="small">{{ s.last_success_at.strftime("%d %b %Y %H:%M UTC") if s.last_success_at else "never" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">Last 24 hours</h3>
+  <p>Total jobs {{ stats.jobs.total_jobs }} · active {{ stats.jobs.active_jobs }} · new {{ stats.jobs.new_since }}</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Source</th><th>Runs</th><th>Fetched</th><th>New</th><th>Duplicates</th><th>Invalid</th><th>Failures</th></tr></thead>
+    <tbody>
+    {% for c in stats.collection %}
+      <tr><td>{{ c.source }}</td><td>{{ c.runs }}</td><td>{{ c.fetched }}</td><td>{{ c.new }}</td><td>{{ c.duplicates }}</td><td>{{ c.invalid }}</td>
+          <td {% if c.failures %}style="color:var(--bad)"{% endif %}>{{ c.failures }}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">No collection runs in the last 24 hours.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# No database. Works on the FREE plan:
+#   - data is kept as JSON files in a private GitHub Gist (Render's free disk is wiped on restart),
+#   - syncing is triggered by an external cron hitting /cron/sync (which also wakes the instance).
+# Secrets marked `sync: false` are asked for once, when you create the Blueprint.
+
+services:
+  - type: web
+    name: ai-job-hunter
+    runtime: docker
+    region: singapore
+    plan: free
+    numInstances: 1
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: APP_ENV
+        value: production
+      - key: TIMEZONE
+        value: Asia/Dhaka
+      # Storage: GitHub Gist (create a secret gist + a token with only the "gist" scope)
+      - key: STORAGE_BACKEND
+        value: gist
+      - key: GIST_ID
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      # Sync: the in-process scheduler can't run while a free instance sleeps; use the cron URL.
+      - key: RUN_SCHEDULER
+        value: "false"
+      - key: SYNC_TOKEN
+        generateValue: true          # copy from the Environment tab into your cron URL
+      - key: API_KEY
+        generateValue: true          # dashboard / API login
+      # Telegram replies to commands only while the instance is awake (alerts are sent on each sync).
+      - key: RUN_BOT
+        value: "true"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_ALLOWED_CHAT_IDS
+        sync: false
+      - key: AI_PROVIDER
+        value: openai
+      - key: AI_FALLBACK_PROVIDER
+        value: none
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: IMAP_HOST
+        value: imap.gmail.com
+      - key: IMAP_USER
+        sync: false
+      - key: IMAP_PASSWORD
+        sync: false
