@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} · AI Job Hunter{% endblock %}
+{% block content %}
+<p><a href="/">← Back to jobs</a></p>
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <div>
+      <h2 style="margin:0">{{ job.title }}</h2>
+      <div class="muted">{{ job.company or "Unknown company" }} · {{ job.location or "Location not specified" }} · {{ job.remote_type }}{% if job.job_type %} · {{ job.job_type }}{% endif %}</div>
+      <div class="muted small">{% if job.salary_text %}💰 {{ job.salary_text }} · {% endif %}Posted {{ (job.posted_at or job.collected_at).strftime("%d %b %Y") }} · via {{ job.source.name }}{% if job.is_expired %} · <strong style="color:var(--bad)">expired</strong>{% endif %}</div>
+    </div>
+    {% if job.apply_url.startswith("http") %}<a class="btn" href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer nofollow">Open / apply ↗</a>{% endif %}
+  </div>
+</div>
+
+{% if match %}
+<div class="card">
+  <div class="row"><span class="score s-{{ match.category }}">{{ match.match_score }}</span>
+    <strong>{{ category_labels[match.category] }}</strong>
+    <span class="muted small">recommendation: {{ match.recommendation }} · confidence {{ "%.0f"|format(match.confidence * 100) }}% · scored by {{ match.provider }}{% if match.model %} ({{ match.model }}){% endif %}</span></div>
+  {% if match.ai_reason %}<p>{{ match.ai_reason }}</p>{% endif %}
+  <div>{% for s in match.matched_skills %}<span class="tag ok">✓ {{ s }}</span>{% endfor %}
+       {% for s in match.missing_skills %}<span class="tag miss">{{ s }}</span>{% endfor %}</div>
+  <p class="small muted">Experience match: {{ match.experience_match if match.experience_match is not none else "unknown" }} · Location eligible: {{ match.location_eligible if match.location_eligible is not none else "unknown" }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3 style="margin-top:0">Track</h3>
+  <form method="post" action="/jobs/{{ job.id }}/status" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <select name="status">{% for s in statuses %}<option value="{{ s }}" {% if application and application.status == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}</select>
+    <button type="submit">Save status</button>
+    {% if application %}<span class="muted small">Currently: {{ application.status }}{% if application.applied_at %} · applied {{ application.applied_at.strftime("%d %b %Y") }}{% endif %}</span>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Application documents</h3>
+  <form method="post" action="/jobs/{{ job.id }}/documents" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <select name="kind">
+      <option value="cover_letter">Cover letter</option><option value="email">Short application email</option><option value="linkedin_message">LinkedIn recruiter message</option>
+    </select>
+    <button type="submit">Generate draft</button>
+    <span class="muted small">Drafts are saved here only — nothing is sent.</span>
+  </form>
+  {% for d in docs %}
+    <details style="margin-top:10px" {% if loop.first %}open{% endif %}><summary>{{ d.kind.replace("_", " ")|capitalize }} · {{ d.created_at.strftime("%d %b %Y %H:%M") }} <span class="muted small">({{ d.provider }})</span></summary>
+      <textarea rows="12" readonly>{{ d.content }}</textarea></details>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Description</h3>
+  <pre class="desc">{{ job.description or "No description available from this source." }}</pre>
+</div>
+{% endblock %}

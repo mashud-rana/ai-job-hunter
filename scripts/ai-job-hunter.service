@@ -1,0 +1,29 @@
+# systemd unit for running without Docker (see README "Ubuntu VPS without Docker").
+# Install: sudo cp scripts/ai-job-hunter.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#          sudo systemctl enable --now ai-job-hunter
+[Unit]
+Description=AI Job Hunter (FastAPI + scheduler + Telegram bot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jobhunter
+Group=jobhunter
+WorkingDirectory=/opt/ai-job-hunter
+EnvironmentFile=/opt/ai-job-hunter/.env
+ExecStart=/opt/ai-job-hunter/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 \
+          --proxy-headers --forwarded-allow-ips 127.0.0.1 --timeout-graceful-shutdown 40 --no-server-header
+Restart=always
+RestartSec=5
+TimeoutStopSec=60
+KillSignal=SIGINT
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ai-job-hunter/storage
+
+[Install]
+WantedBy=multi-user.target
